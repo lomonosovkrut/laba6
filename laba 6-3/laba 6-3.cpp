@@ -1,138 +1,150 @@
-﻿
-#define _CRT_SECURE_NO_WARNINGS
+﻿#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <locale.h>
 
-void generate_adjacency_matrix(int** matrix, int vertices) {
-    for (int i = 0; i < vertices; i++) {
-        for (int j = i; j < vertices; j++) {
-            if (i == j) {
-                matrix[i][j] = 0; // No self-loops
-            }
-            else {
-                matrix[i][j] = rand() % 2; // Randomly create edges
-                matrix[j][i] = matrix[i][j]; // Ensure the graph is undirected
+// Функция для генерации матрицы смежности случайного графа
+void generate_adjacency_matrix(int** matrix, int size) {
+    // Инициализируем матрицу нулями
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            matrix[i][j] = 0;
+        }
+    }
+
+    // Случайно заполняем верхний треугольник матрицы для создания неориентированных рёбер
+    for (int i = 0; i < size; i++) {
+        for (int j = i + 1; j < size; j++) {
+            if (rand() % 2) { // С вероятностью 0.5 создаём ребро
+                matrix[i][j] = 1;
+                matrix[j][i] = 1; // Граф неориентированный
             }
         }
     }
 }
 
-void print_adjacency_matrix(int** matrix, int vertices) {
+// Функция для вывода матрицы смежности
+void print_matrix(int** matrix, int size) {
     printf("Матрица смежности:\n");
-    for (int i = 0; i < vertices; i++) {
-        for (int j = 0; j < vertices; j++) {
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
             printf("%d ", matrix[i][j]);
         }
         printf("\n");
     }
 }
 
-void union_graphs(int** g1, int vertices1, int** g2, int vertices2, int** result) {
-    int max_vertices = (vertices1 > vertices2) ? vertices1 : vertices2;
-    for (int i = 0; i < max_vertices; i++) {
-        for (int j = 0; j < max_vertices; j++) {
-            int edge1 = (i < vertices1 && j < vertices1) ? g1[i][j] : 0;
-            int edge2 = (i < vertices2 && j < vertices2) ? g2[i][j] : 0;
-            result[i][j] = edge1 | edge2; // Union operation
-        }
+// Функция для освобождения памяти матрицы
+void free_matrix(int** matrix, int size) {
+    for (int i = 0; i < size; i++) {
+        free(matrix[i]);
     }
+    free(matrix);
 }
 
-void intersection_graphs(int** g1, int vertices1, int** g2, int vertices2, int** result) {
-    int max_vertices = (vertices1 > vertices2) ? vertices1 : vertices2;
-    for (int i = 0; i < max_vertices; i++) {
-        for (int j = 0; j < max_vertices; j++) {
-            int edge1 = (i < vertices1 && j < vertices1) ? g1[i][j] : 0;
-            int edge2 = (i < vertices2 && j < vertices2) ? g2[i][j] : 0;
-            result[i][j] = edge1 & edge2; // Intersection operation
+// Функция для объединения двух графов
+int** union_graphs(int** m1, int** m2, int size1, int size2) {
+    int max_size = (size1 > size2) ? size1 : size2;
+    int** union_matrix = (int**)malloc(max_size * sizeof(int*));
+
+    for (int i = 0; i < max_size; i++) {
+        union_matrix[i] = (int*)calloc(max_size, sizeof(int));
+        for (int j = 0; j < max_size; j++) {
+            int edge1 = (i < size1 && j < size1) ? m1[i][j] : 0;
+            int edge2 = (i < size2 && j < size2) ? m2[i][j] : 0;
+            union_matrix[i][j] = edge1 | edge2; // Операция объединения (OR)
         }
     }
+
+    return union_matrix;
 }
 
-void ring_sum_graphs(int** g1, int vertices1, int** g2, int vertices2, int** result) {
-    int max_vertices = (vertices1 > vertices2) ? vertices1 : vertices2;
-    for (int i = 0; i < max_vertices; i++) {
-        for (int j = 0; j < max_vertices; j++) {
-            int edge1 = (i < vertices1 && j < vertices1) ? g1[i][j] : 0;
-            int edge2 = (i < vertices2 && j < vertices2) ? g2[i][j] : 0;
-            result[i][j] = edge1 ^ edge2; // Ring sum operation
+// Функция для пересечения двух графов
+int** intersection_graphs(int** m1, int** m2, int size1, int size2) {
+    int min_size = (size1 < size2) ? size1 : size2;
+    int** intersection_matrix = (int**)malloc(min_size * sizeof(int*));
+
+    for (int i = 0; i < min_size; i++) {
+        intersection_matrix[i] = (int*)calloc(min_size, sizeof(int));
+        for (int j = 0; j < min_size; j++) {
+            int edge1 = (i < size1 && j < size1) ? m1[i][j] : 0;
+            int edge2 = (i < size2 && j < size2) ? m2[i][j] : 0;
+            intersection_matrix[i][j] = edge1 & edge2; // Операция пересечения (AND)
         }
     }
+
+    return intersection_matrix;
+}
+
+// Функция для кольцевой суммы двух графов
+int** ring_sum_graphs(int** m1, int** m2, int size1, int size2) {
+    int max_size = (size1 > size2) ? size1 : size2;
+    int** ring_sum_matrix = (int**)malloc(max_size * sizeof(int*));
+
+    for (int i = 0; i < max_size; i++) {
+        ring_sum_matrix[i] = (int*)calloc(max_size, sizeof(int));
+        for (int j = 0; j < max_size; j++) {
+            int edge1 = (i < size1 && j < size1) ? m1[i][j] : 0;
+            int edge2 = (i < size2 && j < size2) ? m2[i][j] : 0;
+            ring_sum_matrix[i][j] = edge1 ^ edge2; // Операция кольцевой суммы (XOR)
+        }
+    }
+
+    return ring_sum_matrix;
 }
 
 int main() {
     setlocale(LC_ALL, "RUS");
     srand(time(NULL));
+    int size1, size2;
 
-    int vertices1, vertices2;
-    printf("Введите количество вершин для графа G1: ");
-    scanf("%d", &vertices1);
-    printf("Введите количество вершин для графа G2: ");
-    scanf("%d", &vertices2);
+    printf("Введите размер первого графа: ");
+    scanf("%d", &size1);
+    printf("Введите размер второго графа: ");
+    scanf("%d", &size2);
 
-    // Allocate memory for two adjacency matrices
-    int** G1 = (int**)malloc(vertices1 * sizeof(int*));
-    int** G2 = (int**)malloc(vertices2 * sizeof(int*));
-    for (int i = 0; i < vertices1; i++) {
-        G1[i] = (int*)malloc(vertices1 * sizeof(int));
-    }
-    for (int i = 0; i < vertices2; i++) {
-        G2[i] = (int*)malloc(vertices2 * sizeof(int));
+    // Выделяем память для матриц смежности
+    int** M1 = (int**)malloc(size1 * sizeof(int*));
+    int** M2 = (int**)malloc(size2 * sizeof(int*));
+
+    for (int i = 0; i < size1; i++) {
+        M1[i] = (int*)malloc(size1 * sizeof(int));
     }
 
-    // Generate adjacency matrices
-    generate_adjacency_matrix(G1, vertices1);
-    generate_adjacency_matrix(G2, vertices2);
+    for (int i = 0; i < size2; i++) {
+        M2[i] = (int*)malloc(size2 * sizeof(int));
+    }
 
-    // Print generated matrices
+    // Генерируем матрицы смежности
+    generate_adjacency_matrix(M1, size1);
+    generate_adjacency_matrix(M2, size2);
+
+    // Выводим сгенерированные матрицы
     printf("\nМатрица смежности графа G1:\n");
-    print_adjacency_matrix(G1, vertices1);
+    print_matrix(M1, size1);
     printf("\nМатрица смежности графа G2:\n");
-    print_adjacency_matrix(G2, vertices2);
+    print_matrix(M2, size2);
 
-    // Allocate memory for result matrices
-    int max_vertices = (vertices1 > vertices2) ? vertices1 : vertices2;
-    int** union_result = (int**)malloc(max_vertices * sizeof(int*));
-    int** intersection_result = (int**)malloc(max_vertices * sizeof(int*));
-    int** ring_sum_result = (int**)malloc(max_vertices * sizeof(int*));
-    for (int i = 0; i < max_vertices; i++) {
-        union_result[i] = (int*)malloc(max_vertices * sizeof(int));
-        intersection_result[i] = (int*)malloc(max_vertices * sizeof(int));
-        ring_sum_result[i] = (int*)malloc(max_vertices * sizeof(int));
-    }
+    // Выполняем операции над графами
+    int** union_matrix = union_graphs(M1, M2, size1, size2);
+    int** intersection_matrix = intersection_graphs(M1, M2, size1, size2);
+    int** ring_sum_matrix = ring_sum_graphs(M1, M2, size1, size2);
 
-    // Perform graph operations
-    union_graphs(G1, vertices1, G2, vertices2, union_result);
-    intersection_graphs(G1, vertices1, G2, vertices2, intersection_result);
-    ring_sum_graphs(G1, vertices1, G2, vertices2, ring_sum_result);
+    // Выводим результаты операций
+    printf("\nМатрица объединения графов:\n");
+    print_matrix(union_matrix, (size1 > size2) ? size1 : size2);
+    printf("\nМатрица пересечения графов:\n");
+    print_matrix(intersection_matrix, (size1 < size2) ? size1 : size2);
+    printf("\nМатрица кольцевой суммы графов:\n");
+    print_matrix(ring_sum_matrix, (size1 > size2) ? size1 : size2);
 
-    // Print results
-    printf("\nОбъединение графов G1 и G2:\n");
-    print_adjacency_matrix(union_result, max_vertices);
-    printf("\nПересечение графов G1 и G2:\n");
-    print_adjacency_matrix(intersection_result, max_vertices);
-    printf("\nКольцевая сумма графов G1 и G2:\n");
-    print_adjacency_matrix(ring_sum_result, max_vertices);
-
-    // Free allocated memory
-    for (int i = 0; i < vertices1; i++) {
-        free(G1[i]);
-    }
-    for (int i = 0; i < vertices2; i++) {
-        free(G2[i]);
-    }
-    for (int i = 0; i < max_vertices; i++) {
-        free(union_result[i]);
-        free(intersection_result[i]);
-        free(ring_sum_result[i]);
-    }
-    free(G1);
-    free(G2);
-    free(union_result);
-    free(intersection_result);
-    free(ring_sum_result);
+    // Освобождаем выделенную память
+    free_matrix(M1, size1);
+    free_matrix(M2, size2);
+    free_matrix(union_matrix, (size1 > size2) ? size1 : size2);
+    free_matrix(intersection_matrix, (size1 < size2) ? size1 : size2);
+    free_matrix(ring_sum_matrix, (size1 > size2) ? size1 : size2);
 
     return 0;
 }
